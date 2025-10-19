@@ -1,0 +1,6 @@
+# Sample Sanskrit Text for Testing
+# Format: One sentence per line
+
+rāmo'sti
+tathā'pi
+namaste

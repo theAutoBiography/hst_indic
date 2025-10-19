@@ -1,0 +1,74 @@
+# Database Configuration
+database:
+  host: localhost
+  port: 5432
+  database: indic_annotation
+  user: postgres
+  password: ${DB_PASSWORD}  # Will be loaded from .env file
+  pool_size: 5
+  max_overflow: 10
+  echo: false  # Set to true for SQL query debugging
+
+# Data Paths
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  annotations_dir: data/annotations
+  dictionaries_dir: data/dictionaries
+
+# Processing Configuration
+processing:
+  batch_size: 100
+  max_workers: 4
+  chunk_size: 1000
+
+# Annotation Settings
+annotation:
+  # Sandhi detection
+  sandhi:
+    confidence_threshold: 0.7
+    max_splits: 10
+    verify_with_dictionary: true
+
+  # Samasa detection
+  samasa:
+    confidence_threshold: 0.7
+    max_components: 5
+
+  # Taddhita detection
+  taddhita:
+    confidence_threshold: 0.7
+
+# Language Settings
+languages:
+  - sanskrit
+  - tamil
+  - gujarati
+
+# Dictionary Sources
+dictionaries:
+  sanskrit:
+    monier_williams_url: https://www.sanskrit-lexicon.uni-koeln.de/scans/MWScan/2020/web/webtc/download.html
+    apte_url: https://www.sanskrit-lexicon.uni-koeln.de/scans/AEScan/2014/web/webtc/download.html
+
+  tamil:
+    # Add Tamil dictionary sources
+    fabricius_url: ""
+
+  gujarati:
+    # Add Gujarati dictionary sources
+    source_url: ""
+
+# Logging Configuration
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: logs/pipeline.log
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+
+# API Settings (for future web interface)
+api:
+  host: 0.0.0.0
+  port: 5000
+  debug: false

@@ -1,0 +1,22 @@
+# Sample Sanskrit Texts for Testing Sandhi Detection
+# Format: Original sentence | Expected splits (if any) | Source
+
+# From Bhagavad Gita
+dharmaḳṣetre kurukṣetre | dharma-kṣetre kuru-kṣetre | BG 1.1
+rāmaḥ | rāmaḥ (no split - single word) | Common
+kṛṣṇaḥ | kṛṣṇaḥ (no split - single word) | Common
+
+# Sandhi examples
+rāmo'sti | rāmaḥ + asti | Visarga sandhi
+naro'pi | naraḥ + api | Visarga sandhi
+tathā'pi | tathā + api | Vowel sandhi
+sa eva | sa + eva | No sandhi (separate words)
+
+# Compounds (Samasa)
+rāmāyaṇam | rāma + ayanam | Compound
+mahābhāratam | mahā + bhāratam | Compound
+devadattaḥ | deva + dattaḥ | Compound
+
+# Common phrases
+namaste | namaḥ + te | Dative sandhi
+atha yogānuśāsanam | atha + yoga + anuśāsanam | Yoga Sutras 1.1
