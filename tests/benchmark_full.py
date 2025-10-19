@@ -15,16 +15,27 @@ from indic_transliteration import sanscript
 
 
 def load_full_data():
-    """Load all 1,425 SandhiKosh examples"""
-    data_path = Path("data/processed/sandhikosh_full_1430.json")
-    with open(data_path, 'r') as f:
+    """Load all SandhiKosh examples"""
+    data_path = Path("data/processed/sandhikosh_full.json")
+    with open(data_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     return data['examples']
 
 
 def normalize_word(word):
-    """Normalize word for comparison"""
-    return word.strip().lower()
+    """Normalize word for comparison - handle encoding"""
+    from indic_transliteration import sanscript
+
+    word = word.strip()
+
+    # Convert to IAST for comparison (standard format)
+    # Try to detect if it's Devanagari
+    if any(ord(c) > 2304 and ord(c) < 2431 for c in word):
+        # Devanagari range
+        word = sanscript.transliterate(word, sanscript.DEVANAGARI, sanscript.IAST)
+
+    # Normalize to lowercase
+    return word.lower()
 
 
 def check_match(predicted_words, expected_words):

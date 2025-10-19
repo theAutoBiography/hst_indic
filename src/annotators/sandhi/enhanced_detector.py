@@ -39,6 +39,7 @@ class EnhancedSandhiDetector(SanskritSandhiDetector):
         min_confidence: float = 0.3,  # Lower to catch more candidates
         beam_width: int = 5,
         max_words: int = 5,
+        use_mw_dictionary: bool = True,
         **kwargs
     ):
         super().__init__(
@@ -48,9 +49,32 @@ class EnhancedSandhiDetector(SanskritSandhiDetector):
         )
         self.beam_width = beam_width
         self.max_words = max_words
+        self.use_mw_dictionary = use_mw_dictionary
+
+        # Load Monier-Williams dictionary (344k entries)
+        if use_mw_dictionary:
+            self.mw_headwords = self._load_mw_dictionary()
+            logger.info(f"Loaded {len(self.mw_headwords)} MW headwords")
+        else:
+            self.mw_headwords = set()
 
         # Frequency statistics (can be loaded from corpus)
         self.word_frequency = self._initialize_frequencies()
+
+    def _load_mw_dictionary(self) -> set:
+        """Load Monier-Williams headwords from pickle file"""
+        import pickle
+        from pathlib import Path
+
+        mw_path = Path("data/dictionaries/mw_headwords.pkl")
+        if mw_path.exists():
+            try:
+                with open(mw_path, 'rb') as f:
+                    data = pickle.load(f)
+                return data.get('headwords', set())
+            except Exception as e:
+                logger.warning(f"Failed to load MW dictionary: {e}")
+        return set()
 
     def _initialize_frequencies(self) -> Counter:
         """
@@ -236,16 +260,20 @@ class EnhancedSandhiDetector(SanskritSandhiDetector):
         """
         score = 0.5  # Base score
 
-        # Dictionary check
+        # MW dictionary check (strongest signal)
+        if self.mw_headwords and word in self.mw_headwords:
+            score += 0.35
+
+        # Fallback dictionary check
         if self.dictionary and self.dictionary.exists(word):
-            score += 0.3
+            score += 0.2
 
         # Frequency bonus
         if word in self.word_frequency:
             freq = self.word_frequency[word]
-            score += min(0.2, freq / 10000)  # Cap at 0.2
+            score += min(0.15, freq / 10000)
 
-        # Length penalty (very short or very long words less likely)
+        # Length penalty
         word_len = len(word)
         if 2 <= word_len <= 15:
             score += 0.1
