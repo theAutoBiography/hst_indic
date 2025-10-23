@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Fast ByT5 training with optimized data loading
+Converts all data to IITHLP transliteration for cross-language compatibility
 """
 
 import json
@@ -18,7 +19,28 @@ from transformers import (
 from datasets import Dataset
 import numpy as np
 
+# IITHLP transliteration for cross-language support
+try:
+    from iithlp import to_roman
+    TRANSLITERATION_AVAILABLE = True
+    print("✓ IITHLP transliteration available")
+except ImportError:
+    print("WARNING: iithlp not installed. Run: pip install iithlp")
+    print("Training will use original Devanagari script")
+    TRANSLITERATION_AVAILABLE = False
+
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+
+
+def transliterate_to_iithlp(text: str) -> str:
+    """Convert Devanagari text to IITHLP Roman script"""
+    if not TRANSLITERATION_AVAILABLE:
+        return text
+    try:
+        return to_roman(text)
+    except Exception as e:
+        print(f"Warning: Failed to transliterate '{text}': {e}")
+        return text
 
 
 def load_and_prepare_data(tokenizer, max_examples=None):
@@ -55,6 +77,17 @@ def load_and_prepare_data(tokenizer, max_examples=None):
 
     if max_examples:
         all_examples = all_examples[:max_examples]
+
+    print(f"Total examples (Devanagari): {len(all_examples):,}")
+
+    # Convert to IITHLP transliteration
+    if TRANSLITERATION_AVAILABLE:
+        print("Converting to IITHLP Roman script...")
+        all_examples = [
+            (transliterate_to_iithlp(surface), transliterate_to_iithlp(split))
+            for surface, split in all_examples
+        ]
+        print("✓ Transliteration complete")
 
     print(f"Total examples: {len(all_examples):,}")
 
@@ -157,7 +190,8 @@ def train_model():
         per_device_train_batch_size=16,  # Increased from 8
         per_device_eval_batch_size=16,
         gradient_accumulation_steps=2,  # Simulate batch_size=32
-        learning_rate=5e-4,  # Slightly higher for faster convergence
+        learning_rate=1e-4,  # FIXED: Lower LR for character-level model
+        max_grad_norm=1.0,  # FIXED: Gradient clipping to prevent explosion
         warmup_steps=500,
         weight_decay=0.01,
         logging_steps=50,  # More frequent logging
@@ -171,7 +205,8 @@ def train_model():
         greater_is_better=True,
         predict_with_generate=True,
         generation_max_length=128,
-        fp16=True,
+        bf16=torch.cuda.is_bf16_supported(),  # FIXED: Use bf16 if available (more stable)
+        fp16=not torch.cuda.is_bf16_supported(),  # Fallback to fp16
         dataloader_num_workers=4,  # Parallel data loading
         dataloader_pin_memory=True,  # Faster data transfer
         gradient_checkpointing=False,  # DISABLED - too slow
@@ -202,6 +237,14 @@ def train_model():
     print("  ✓ Gradient checkpointing: DISABLED (was slowing down)")
     print("  ✓ Epochs: 3 (reduced for speed)")
     print("  ✓ Pre-tokenized data (no lazy loading)")
+    print()
+    print("Fixed hyperparameters:")
+    print("  ✓ Learning rate: 1e-4 (was 5e-4 - too high!)")
+    print("  ✓ Gradient clipping: 1.0 (prevents NaN)")
+    print("  ✓ bf16/fp16: Auto-detect (more stable)")
+    print()
+    if TRANSLITERATION_AVAILABLE:
+        print("  ✓ Using IITHLP transliteration (cross-language support)")
     print()
     print("Expected: ~2-3 hours (much faster!)")
     print()
