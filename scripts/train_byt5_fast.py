@@ -135,7 +135,24 @@ def compute_metrics(eval_preds, tokenizer):
     if isinstance(predictions, tuple):
         predictions = predictions[0]
 
-    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
+    # Clip predictions to valid Unicode range to avoid chr() errors
+    # Valid Unicode range: 0 to 0x10FFFF (1,114,111)
+    max_valid_id = tokenizer.vocab_size - 1
+    predictions = np.clip(predictions, 0, max_valid_id)
+
+    # Decode with error handling
+    try:
+        decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
+    except (ValueError, OverflowError) as e:
+        print(f"Warning: Decoding error, using safer method: {e}")
+        # Fallback: decode one by one, skip invalid
+        decoded_preds = []
+        for pred_ids in predictions:
+            try:
+                decoded_preds.append(tokenizer.decode(pred_ids, skip_special_tokens=True))
+            except:
+                decoded_preds.append("")  # Empty string for failed decodes
+
     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
