@@ -79,6 +79,11 @@ def load_experiment_data(exp_dir: str, tokenizer):
     val_examples = prepare_examples(val_data)
     test_examples = prepare_examples(test_data)
 
+    # Limit validation set to 1000 examples for faster evaluation
+    if len(val_examples) > 1000:
+        print(f"  Reducing validation from {len(val_examples):,} to 1,000 for speed")
+        val_examples = val_examples[:1000]
+
     # Tokenize
     def tokenize_batch(examples):
         inputs = [f"split: {surface}" for surface, _ in examples]

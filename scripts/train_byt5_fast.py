@@ -104,6 +104,12 @@ def load_and_prepare_data(tokenizer, max_examples=None):
     val_examples = all_examples[n_train:n_train + n_val]
     test_examples = all_examples[n_train + n_val:]
 
+    # Limit validation set to 1000 examples for faster evaluation
+    # Full test set will be used at the end
+    if len(val_examples) > 1000:
+        print(f"Reducing validation set from {len(val_examples):,} to 1,000 for speed")
+        val_examples = val_examples[:1000]
+
     print(f"Train: {len(train_examples):,}")
     print(f"Val: {len(val_examples):,}")
     print(f"Test: {len(test_examples):,}")
