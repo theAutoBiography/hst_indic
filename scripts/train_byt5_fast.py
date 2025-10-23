@@ -196,9 +196,9 @@ def train_model():
         weight_decay=0.01,
         logging_steps=50,  # More frequent logging
         eval_strategy="steps",
-        eval_steps=2000,
+        eval_steps=10000,
         save_strategy="steps",
-        save_steps=2000,
+        save_steps=10000,
         save_total_limit=2,
         load_best_model_at_end=True,
         metric_for_best_model="exact_match_accuracy",
