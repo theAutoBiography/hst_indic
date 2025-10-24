@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Fast ByT5 training with optimized data loading
-Converts all data to IITHLP transliteration for cross-language compatibility
+ByT5-Sanskrit training for sandhi splitting
+Uses buddhist-nlp/byt5-sanskrit model pretrained on Sanskrit Digital Corpus
+Converts all data to IAST transliteration (International Alphabet of Sanskrit Transliteration)
 """
 
 import json
@@ -19,25 +20,26 @@ from transformers import (
 from datasets import Dataset
 import numpy as np
 
-# IITHLP transliteration for cross-language support
+# IAST transliteration for Sanskrit (byt5-sanskrit is trained on IAST)
 try:
-    from iithlp import to_roman
+    from indic_transliteration import sanscript
     TRANSLITERATION_AVAILABLE = True
-    print("✓ IITHLP transliteration available")
+    print("✓ IAST transliteration available (indic_transliteration)")
 except ImportError:
-    print("WARNING: iithlp not installed. Run: pip install iithlp")
+    print("WARNING: indic_transliteration not installed. Run: pip install indic-transliteration")
     print("Training will use original Devanagari script")
     TRANSLITERATION_AVAILABLE = False
 
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
 
-def transliterate_to_iithlp(text: str) -> str:
-    """Convert Devanagari text to IITHLP Roman script"""
+def transliterate_to_iast(text: str) -> str:
+    """Convert Devanagari text to IAST Roman script"""
     if not TRANSLITERATION_AVAILABLE:
         return text
     try:
-        return to_roman(text)
+        # Convert from Devanagari to IAST
+        return sanscript.transliterate(text, sanscript.DEVANAGARI, sanscript.IAST)
     except Exception as e:
         print(f"Warning: Failed to transliterate '{text}': {e}")
         return text
@@ -80,11 +82,11 @@ def load_and_prepare_data(tokenizer, max_examples=None):
 
     print(f"Total examples (Devanagari): {len(all_examples):,}")
 
-    # Convert to IITHLP transliteration
+    # Convert to IAST transliteration
     if TRANSLITERATION_AVAILABLE:
-        print("Converting to IITHLP Roman script...")
+        print("Converting to IAST Roman script...")
         all_examples = [
-            (transliterate_to_iithlp(surface), transliterate_to_iithlp(split))
+            (transliterate_to_iast(surface), transliterate_to_iast(split))
             for surface, split in all_examples
         ]
         print("✓ Transliteration complete")
@@ -190,9 +192,10 @@ def train_model():
         print(f"Available: {free_mem:.1f} GB")
         print()
 
-    # Load model
-    model_name = "google/byt5-small"
+    # Load model - using Sanskrit-pretrained ByT5
+    model_name = "buddhist-nlp/byt5-sanskrit"
     print(f"Loading model: {model_name}")
+    print("  (Pretrained on Sanskrit Digital Corpus with IAST transliteration)")
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
@@ -267,7 +270,7 @@ def train_model():
     print("  ✓ bf16/fp16: Auto-detect (more stable)")
     print()
     if TRANSLITERATION_AVAILABLE:
-        print("  ✓ Using IITHLP transliteration (cross-language support)")
+        print("  ✓ Using IAST transliteration (optimized for byt5-sanskrit)")
     print()
     print("Expected: ~2-3 hours (much faster!)")
     print()
